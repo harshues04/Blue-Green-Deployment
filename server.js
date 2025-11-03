@@ -11,7 +11,7 @@ app.get('/health', (req, res) => {
 
 // Root route
 app.get('/', (req, res) => {
-  res.send(`🚀 Node.js Blue-Green App running on port ${port}`);
+  res.send(`🚀 new Node.js Blue-Green App running on port ${port}`);
 });
 
 // Start server
