@@ -25,6 +25,7 @@ pipeline {
                 script {
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
                         dockerImage.push()
+                        dockerImage.push('latest')
                     }
                 }
             }
@@ -33,13 +34,19 @@ pipeline {
         stage('Deploy Blue-Green') {
             steps {
                 script {
-                    // Detect which container is active
-                    def active = sh(returnStdout: true, script: 'docker ps --filter "name=node_blue" --format "{{.Names}}"').trim()
-                    def nextPort = active == "node_blue" ? "9092" : "9091"
+                    // Check if node_blue is running
+                    def active = sh(
+                        returnStdout: true,
+                        script: 'docker ps --filter "name=node_blue" --format "{{.Names}}" || true'
+                    ).trim()
+
+                    // Decide next color and port
                     def nextColor = active == "node_blue" ? "green" : "blue"
+                    def nextPort = nextColor == "blue" ? "9091" : "9092"
 
                     echo "Deploying ${nextColor} container on port ${nextPort}"
 
+                    // Stop and remove previous inactive container if any
                     sh """
                         docker rm -f node_${nextColor} || true
                         docker run -d --name node_${nextColor} -p ${nextPort}:3000 ${DOCKER_HUB}:${env.BUILD_NUMBER}
